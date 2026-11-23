@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.fch
+*.fch.old
+*.precleanup*
+.DS_Store

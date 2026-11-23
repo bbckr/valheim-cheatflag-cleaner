@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valheim Cheat Flag Cleaner</title>
+<meta name="description" content="Remove Valheim 1.0's permanent 'dev command usage' cheat flag from your character. Runs entirely in your browser - your save never leaves your computer.">
+<style>
+  :root {
+    --bg: #14110e;
+    --panel: #1e1a16;
+    --panel-2: #26211b;
+    --line: #3a3229;
+    --text: #ece4d8;
+    --muted: #a89a88;
+    --accent: #d9a441;
+    --accent-ink: #1a1306;
+    --ok: #7fb069;
+    --bad: #e0614a;
+    --radius: 10px;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -200px, #2a2219 0%, var(--bg) 60%) fixed;
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 64px; }
+  header h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 600; letter-spacing: .5px;
+    font-size: clamp(28px, 5vw, 40px); margin: 0 0 6px;
+  }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); margin: 0 0 28px; max-width: 60ch; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+  }
+  .drop {
+    display: block; text-align: center; cursor: pointer;
+    border: 2px dashed var(--line); border-radius: var(--radius);
+    padding: 42px 20px; transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--panel-2); }
+  .drop strong { display: block; font-size: 18px; margin-bottom: 4px; }
+  .drop small { color: var(--muted); }
+  .drop input { display: none; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+  dl { display: grid; grid-template-columns: 150px 1fr; gap: 8px 14px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; word-break: break-word; }
+  .badge { display: inline-block; padding: 1px 10px; border-radius: 99px; font-size: 13px; font-weight: 600; }
+  .badge.bad { background: rgba(224,97,74,.15); color: var(--bad); }
+  .badge.ok  { background: rgba(127,176,105,.15); color: var(--ok); }
+  .actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 20px; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 11px 20px; border-radius: 8px;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; padding: 6px 12px; font-size: 14px; }
+  label.check { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; cursor: pointer; }
+  .msg { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--accent); }
+  .msg.err { border-left-color: var(--bad); }
+  .msg.ok { border-left-color: var(--ok); }
+  ol { padding-left: 22px; margin: 0; }
+  ol li { margin-bottom: 10px; }
+  code, .path { font-family: var(--mono); font-size: 13.5px; background: #0f0d0b; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+  .path-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .path { padding: 6px 10px; flex: 1 1 auto; min-width: 0; overflow-x: auto; white-space: nowrap; }
+  details summary { cursor: pointer; color: var(--accent); }
+  details p, details ul { color: var(--muted); font-size: 15px; }
+  footer { color: var(--muted); font-size: 14px; text-align: center; margin-top: 34px; }
+  footer a, a { color: var(--accent); }
+  .hidden { display: none !important; }
+  @media (max-width: 520px) { dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 8px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Valheim <span>Cheat Flag</span> Cleaner</h1>
+    <p>Removes the "Achievement progress is permanently disabled for this character due to dev command usage" mark from a Valheim 1.0 character. Your save is processed <strong>in this browser only</strong>. Nothing is uploaded.</p>
+  </header>
+
+  <section class="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".fch">
+      <strong>Drop your character file here</strong>
+      <small>or click to choose a <code>.fch</code> file</small>
+    </label>
+
+    <div id="result" class="hidden">
+      <h2 style="margin-top:22px">Character</h2>
+      <dl>
+        <dt>Name</dt><dd id="r-name"></dd>
+        <dt>Created</dt><dd id="r-created"></dd>
+        <dt>Cheat flag</dt><dd id="r-flag"></dd>
+        <dt>Cheats stat</dt><dd id="r-stat"></dd>
+        <dt>Checksum</dt><dd id="r-hash"></dd>
+      </dl>
+      <div class="actions">
+        <button id="clean">Clean &amp; download</button>
+        <label class="check"><input type="checkbox" id="reset-stat" checked> Also reset the "Cheats" statistic</label>
+      </div>
+    </div>
+    <div id="msg" class="msg hidden"></div>
+  </section>
+
+  <section class="card">
+    <h2>How to use it</h2>
+    <ol>
+      <li><strong>Close Valheim.</strong> If it's running, the game can overwrite your fix when it saves.</li>
+      <li>Open your character folder. Paste this into the Windows Explorer address bar:
+        <div class="path-row">
+          <span class="path" id="winpath">%USERPROFILE%\AppData\LocalLow\IronGate\Valheim\characters_local</span>
+          <button class="ghost" data-copy="winpath">Copy</button>
+        </div>
+        <small style="color:var(--muted)">Steam Cloud characters are in <code>characters</code> instead of <code>characters_local</code>. Linux / Steam Deck: <code>~/.config/unity3d/IronGate/Valheim/</code></small>
+      </li>
+      <li><strong>Make a backup</strong>: copy <code>yourname.fch</code> somewhere safe.</li>
+      <li>Drop <code>yourname.fch</code> above, then click <strong>Clean &amp; download</strong>.</li>
+      <li>Move the downloaded file into the character folder and replace the old one. Keep the exact same file name.</li>
+      <li>Start Valheim and load your character.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>What exactly does this change?</summary>
+      <p>Three things in the <code>.fch</code> file, and nothing else:</p>
+      <ul>
+        <li>The character's persistent <em>used cheats</em> flag is set to <code>false</code>.</li>
+        <li>The <em>Cheats</em> counter in the character statistics is set to <code>0</code> (optional).</li>
+        <li>The file's SHA-512 checksum is recalculated so Valheim accepts the file.</li>
+      </ul>
+      <p>Skills, inventory, map, appearance and everything else stay as they are. If the file doesn't match the expected layout, the tool refuses to change it instead of guessing.</p>
+    </details>
+    <details style="margin-top:10px">
+      <summary>Steam Cloud keeps putting the old file back</summary>
+      <p>If your character is in the <code>characters</code> folder (Steam Cloud), Steam may restore the old copy. Turn off Steam Cloud for Valheim (Steam → right-click Valheim → Properties → General), replace the file, launch the game once, then turn Steam Cloud back on.</p>
+    </details>
+    <details style="margin-top:10px">
+      <summary>The warning still appears</summary>
+      <p>Valheim has other kinds of cheat marks. "…temporarily disabled… cheated items" means you're carrying a spawned item, so drop it or put it in a chest. "…disabled for this world…" is stored in the world save, not the character. Using most dev commands again (<code>spawn</code>, <code>god</code>, <code>debugmode</code>…) will set the flag again.</p>
+    </details>
+  </section>
+
+  <footer>
+    Unofficial fan tool, not affiliated with Iron Gate or Coffee Stain. Always keep a backup.<br>
+    <a href="https://github.com/bbckr/valheim-cheatflag-cleaner">Source &amp; command-line version on GitHub</a>
+  </footer>
+</main>
+
+<script>
+"use strict";
+// Same algorithm as valheim_cheatflag.py - see README "How it works".
+const MIN_CREATED = 1612137600;     // 2021-02-02, Valheim Early Access launch
+const HASH_LEN = 64;                // SHA-512
+const STATS_OFFSET = 16;
+const STAT_CHEATS_INDEX = 4;        // Deaths, CraftsOrUpgrades, Builds, Jumps, Cheats, ...
+const utf8 = new TextDecoder("utf-8", { fatal: true });
+
+class FchError extends Error {}
+
+async function sha512(bytes) {
+  return new Uint8Array(await crypto.subtle.digest("SHA-512", bytes));
+}
+function equal(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function findHeader(u, dv, end) {
+  const now = Date.now() / 1000, hits = [];
+  for (let p = 20; p < end - 9; p++) {
+    if (u[p] > 1) continue;
+    const created = Number(dv.getBigInt64(p + 1, true));
+    if (created < MIN_CREATED || created > now + 365 * 86400) continue;
+    for (let s = 0; s < 64; s++) {
+      const q = p - s - 1;
+      if (q < 13 || u[q] !== s) continue;
+      const idStart = q - 8;
+      for (let L = 1; L < 64; L++) {
+        const ls = idStart - L - 1;
+        if (ls < 4) break;
+        if (u[ls] !== L) continue;
+        let name;
+        try { name = utf8.decode(u.subarray(ls + 1, idStart)); } catch { continue; }
+        if (name.trim() && !/[\u0000-\u001f\u007f]/.test(name)) hits.push({ flag: p, name, created });
+      }
+    }
+  }
+  return hits;
+}
+
+function statsLookValid(u, dv, count, end) {
+  const after = STATS_OFFSET + count * 4;
+  if (!(count > 0 && count < 2000) || after + 4 > end) return false;
+  const worlds = dv.getInt32(after, true);
+  if (worlds < 0 || worlds >= 10000) return false;
+  if (worlds === 0) return true;
+  const ln = u[after + 4];
+  if (ln === 0 || ln >= 128) return false;
+  try { utf8.decode(u.subarray(after + 5, after + 5 + ln)); } catch { return false; }
+  return true;
+}
+
+async function parse(buffer, hintName) {
+  const u = new Uint8Array(buffer), dv = new DataView(buffer);
+  if (u.length < 4 + 16 + 4 + HASH_LEN) throw new FchError("This file is too small to be a Valheim character.");
+  const dataLen = dv.getUint32(0, true), end = 4 + dataLen;
+  if (end + 4 + HASH_LEN > u.length) throw new FchError("This doesn't look like a Valheim character file (.fch).");
+  if (dv.getUint32(end, true) !== HASH_LEN) throw new FchError("Unsupported file layout: checksum block not found.");
+  const checksumOk = equal(u.subarray(end + 4, end + 4 + HASH_LEN), await sha512(u.subarray(4, end)));
+  const statsCount = dv.getUint32(8, true);
+
+  let hits = findHeader(u, dv, end);
+  if (hits.length > 1 && hintName) {
+    const n = hits.filter(h => h.name.toLowerCase() === hintName.toLowerCase());
+    if (n.length) hits = n;
+  }
+  if (!hits.length) throw new FchError("Couldn't find the character header. The save format may have changed. Nothing was modified.");
+  if (hits.length > 1) throw new FchError("Found several possible flag locations, so I'm refusing to guess. Nothing was modified.");
+
+  const cheatsOff = statsLookValid(u, dv, statsCount, end) && statsCount > STAT_CHEATS_INDEX
+    ? STATS_OFFSET + STAT_CHEATS_INDEX * 4 : null;
+  return {
+    u, dv, dataLen, end, checksumOk, ...hits[0], cheatsOff,
+    version: dv.getUint32(4, true),
+    get usedCheats() { return this.u[this.flag] === 1; },
+    get cheatsStat() { return this.cheatsOff === null ? null : this.dv.getFloat32(this.cheatsOff, true); },
+  };
+}
+
+async function clean(info, resetStat) {
+  const out = new Uint8Array(info.u);           // copy
+  const dv = new DataView(out.buffer);
+  out[info.flag] = 0;
+  if (resetStat && info.cheatsOff !== null) dv.setFloat32(info.cheatsOff, 0, true);
+  out.set(await sha512(out.subarray(4, info.end)), info.end + 4);
+  return out;
+}
+
+// ---------------------------------------------------------------- UI
+const $ = id => document.getElementById(id);
+let current = null, fileName = "";
+
+function message(text, kind = "") {
+  const m = $("msg");
+  m.className = "msg " + kind;
+  m.textContent = text;
+}
+function badge(on, onText, offText) {
+  return `<span class="badge ${on ? "bad" : "ok"}">${on ? onText : offText}</span>`;
+}
+function render(info) {
+  $("result").classList.remove("hidden");
+  $("r-name").textContent = info.name;
+  $("r-created").textContent = new Date(info.created * 1000).toLocaleDateString() + ` (save version ${info.version})`;
+  $("r-flag").innerHTML = badge(info.usedCheats, "Flagged as cheater", "Not flagged");
+  const s = info.cheatsStat;
+  $("r-stat").innerHTML = s === null ? "Unknown" : badge(s !== 0, String(s), "0");
+  $("r-hash").innerHTML = info.checksumOk ? badge(false, "", "Valid") : badge(true, "Invalid, will be fixed", "");
+  const clean = !info.usedCheats && (s === null || s === 0) && info.checksumOk;
+  $("clean").disabled = clean;
+  if (clean) message("This character isn't flagged. Nothing to do.", "ok");
+  else $("msg").classList.add("hidden");
+}
+
+async function handle(file) {
+  current = null;
+  $("result").classList.add("hidden");
+  if (!file) return;
+  fileName = file.name;
+  if (!/\.fch$/i.test(fileName)) {
+    message("Pick the .fch file, not .fch.old or a backup.", "err");
+    return;
+  }
+  try {
+    current = await parse(await file.arrayBuffer(), fileName.replace(/\.fch$/i, ""));
+    render(current);
+  } catch (e) {
+    message(e instanceof FchError ? e.message : "Couldn't read that file: " + e.message, "err");
+  }
+}
+
+$("file").addEventListener("change", e => handle(e.target.files[0]));
+const drop = $("drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => handle(e.dataTransfer.files[0]));
+
+$("clean").addEventListener("click", async () => {
+  if (!current) return;
+  const out = await clean(current, $("reset-stat").checked);
+  const check = await parse(out.buffer.slice(0), current.name);
+  if (check.usedCheats || !check.checksumOk) { message("Verification failed. Nothing was downloaded.", "err"); return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([out], { type: "application/octet-stream" }));
+  a.download = fileName;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  message(`Done. "${fileName}" was downloaded with the cheat flag cleared. Replace the file in your character folder with it (same name), then start Valheim.`, "ok");
+});
+
+document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($(b.dataset.copy).textContent); b.textContent = "Copied"; }
+  catch { b.textContent = "Select & copy"; }
+  setTimeout(() => (b.textContent = "Copy"), 1500);
+}));
+</script>
+</body>
+</html>
